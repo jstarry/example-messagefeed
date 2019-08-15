@@ -81,16 +81,21 @@ export default class Api {
       const response = {explorerUrl, loginMethod, walletUrl};
 
       try {
-        Object.assign(response,
-          await this.messageFeed.updateConfig(this.connection, messageFeed)
+        Object.assign(
+          response,
+          await this.messageFeed.updateConfig(this.connection, messageFeed),
         );
       } catch (err) {
         console.error('failed to update message feed config', err);
       }
 
       try {
-        Object.assign(response,
-          await this.predictionPoll.updateConfig(this.connection, predictionPoll)
+        Object.assign(
+          response,
+          await this.predictionPoll.updateConfig(
+            this.connection,
+            predictionPoll,
+          ),
         );
       } catch (err) {
         console.error('failed to update poll config', err);
@@ -204,7 +209,11 @@ export default class Api {
 
   async postMessage(newMessage, userToBan) {
     const payerAccount = await this.getPayerAccount();
-    return await this.messageFeed.postMessage(payerAccount, newMessage, userToBan);
+    return await this.messageFeed.postMessage(
+      payerAccount,
+      newMessage,
+      userToBan,
+    );
   }
 
   async isUserBanned(userKey) {

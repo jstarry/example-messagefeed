@@ -1,6 +1,4 @@
-import {
-  refreshCollection,
-} from '../../programs/prediction-poll';
+import {refreshCollection} from '../../programs/prediction-poll';
 
 export default class PredictionPollApi {
   constructor() {
@@ -20,14 +18,16 @@ export default class PredictionPollApi {
   }
 
   async pollCollection(callback) {
-    if (callback !== this.pollCallback || !this.connection) return;
+    if (callback !== this.pollCallback) return;
     console.log('pollCollection');
 
-    try {
-      await refreshCollection(this.collection, this.collection);
-      console.log('Refreshed collection');
-    } catch (err) {
-      console.error(`pollCollection error: ${err}`);
+    if (this.connection) {
+      try {
+        await refreshCollection(this.connection, this.collection);
+        console.log('Refreshed collection');
+      } catch (err) {
+        console.error(`pollCollection error: ${err}`);
+      }
     }
 
     setTimeout(() => this.pollCollection(callback), 1000);
@@ -47,7 +47,7 @@ export default class PredictionPollApi {
           polls: this.polls,
           programId,
           collection,
-        }
+        },
       };
     }
   }

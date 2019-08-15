@@ -1,13 +1,18 @@
 // @flow
 import fs from 'mz/fs';
 import path from 'path';
-import {Account, BpfLoader, Connection, PublicKey,
+import {
+  Account,
+  BpfLoader,
+  Connection,
+  PublicKey,
   Transaction,
   SystemProgram,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
+
 import {newSystemAccountWithAirdrop} from '../util/new-system-account-with-airdrop';
-import {url, walletUrl} from '../../urls';
+import {url} from '../../urls';
 import * as ProgramCommand from '../programs/prediction-poll/command';
 
 export type PollMeta = {
@@ -47,7 +52,7 @@ export default class PollController {
     try {
       this.meta = await this.createProgram();
       this.loading = false;
-    } catch(err) {
+    } catch (err) {
       console.error(`create poll program failed: ${err}`);
     } finally {
       this.loading = false;
@@ -55,8 +60,8 @@ export default class PollController {
   }
 
   /**
-  * Creates a new Prediction Poll collection.
-  */
+   * Creates a new Prediction Poll collection.
+   */
   async createProgram(): Promise<PollMeta> {
     const programId = await this.loadProgram();
     console.log('Prediction Poll program:', programId.toString());
@@ -64,12 +69,12 @@ export default class PollController {
 
     const collection = await this.createCollection(programId);
     console.log('Collection public key:', collection.publicKey.toString());
-    return { programId, collection };
+    return {programId, collection};
   }
 
   /**
-  * Creates a new Prediction Poll collection.
-  */
+   * Creates a new Prediction Poll collection.
+   */
   async createCollection(programId: PublicKey): Promise<Account> {
     const fee = 100; // TODO: Use the FeeCalculator to determine the current cluster transaction fee
     const programFunds = 10000;
@@ -88,35 +93,19 @@ export default class PollController {
         // TODO add more data
         32 + 32 + 32, // 32 = size of a public key
         programId,
-      )
-    );
-
-    const pollAccount = new Account();
-    transaction.add(
-      SystemProgram.createAccount(
-        payerAccount.publicKey,
-        pollAccount.publicKey,
-        1,
-        300,
-        programId,
       ),
     );
 
     transaction.add({
       keys: [
-        {pubkey: collectionAccount.publicKey, isSigner: true, isDebitable: true},
+        {
+          pubkey: collectionAccount.publicKey,
+          isSigner: true,
+          isDebitable: true,
+        },
       ],
       programId,
       data: ProgramCommand.initCollection(),
-    });
-
-    transaction.add({
-      keys: [
-        {pubkey: collectionAccount.publicKey, isSigner: true, isDebitable: true},
-        {pubkey: pollAccount.publicKey, isSigner: false, isDebitable: false},
-      ],
-      programId,
-      data: ProgramCommand.initPoll(),
     });
 
     await sendAndConfirmTransaction(
@@ -130,8 +119,8 @@ export default class PollController {
   }
 
   /**
-  * Load a new instance of the Prediction Poll program
-  */
+   * Load a new instance of the Prediction Poll program
+   */
   async loadProgram(): Promise<PublicKey> {
     const elfFile = path.join(
       __dirname,
@@ -145,8 +134,10 @@ export default class PollController {
     const elfData = await fs.readFile(elfFile);
 
     console.log('Loading program...');
-    const loaderAccount = await newSystemAccountWithAirdrop(this.connection, 100000);
+    const loaderAccount = await newSystemAccountWithAirdrop(
+      this.connection,
+      100000,
+    );
     return BpfLoader.load(this.connection, loaderAccount, elfData);
   }
-
 }

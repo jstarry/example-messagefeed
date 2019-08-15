@@ -2,8 +2,9 @@
 import fs from 'mz/fs';
 import path from 'path';
 import {Account, BpfLoader, Connection, PublicKey} from '@solana/web3.js';
+
 import {newSystemAccountWithAirdrop} from '../util/new-system-account-with-airdrop';
-import {url, walletUrl} from '../../urls';
+import {url} from '../../urls';
 import * as Program from '../programs/message-feed';
 
 export type MessageFeedMeta = {
@@ -42,7 +43,7 @@ export default class MessageFeedController {
     try {
       this.meta = await this.createMessageFeed();
       this.loading = false;
-    } catch(err) {
+    } catch (err) {
       console.error(`createMessageFeed failed: ${err}`);
     } finally {
       this.loading = false;
@@ -50,8 +51,8 @@ export default class MessageFeedController {
   }
 
   /**
-  * Creates a new Message Feed.
-  */
+   * Creates a new Message Feed.
+   */
   async createMessageFeed(): Promise<MessageFeedMeta> {
     const programId = await this.loadProgram();
     console.log('Message feed program:', programId.toString());
@@ -79,8 +80,8 @@ export default class MessageFeedController {
   }
 
   /**
-  * Load a new instance of the Message Feed program
-  */
+   * Load a new instance of the Message Feed program
+   */
   async loadProgram(): Promise<PublicKey> {
     const elfFile = path.join(
       __dirname,
@@ -94,7 +95,10 @@ export default class MessageFeedController {
     const elfData = await fs.readFile(elfFile);
 
     console.log('Loading program...');
-    const loaderAccount = await newSystemAccountWithAirdrop(this.connection, 100000);
+    const loaderAccount = await newSystemAccountWithAirdrop(
+      this.connection,
+      100000,
+    );
     return BpfLoader.load(this.connection, loaderAccount, elfData);
   }
 }

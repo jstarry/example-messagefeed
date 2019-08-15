@@ -1,18 +1,24 @@
 /* eslint import/no-commonjs:0 */
+const path = require('path');
 const webpack = require('webpack');
+const CopyPlugin = require('copy-webpack-plugin');
+const WasmPackPlugin = require('@wasm-tool/wasm-pack-plugin');
+const FilterWarningsPlugin = require('webpack-filter-warnings-plugin');
 
-module.exports = {
+const distStatic = path.resolve(__dirname, 'dist', 'static');
+const clientConfig = {
+  target: 'web',
   entry: './src/webapp/bootstrap.js',
+  output: {
+    path: distStatic,
+    publicPath: '/',
+    filename: 'bundle.js',
+  },
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: ['babel-loader'],
-      },
-      {
         test: /\.js$/,
-        exclude: /node_modules/,
+        exclude: [/node_modules/, /wasm/],
         use: ['babel-loader', 'eslint-loader'],
       },
       {
@@ -25,17 +31,24 @@ module.exports = {
     extensions: ['*', '.js', '.jsx'],
     mainFiles: ['index'],
   },
-  output: {
-    path: __dirname + '/dist',
-    publicPath: '/',
-    filename: 'bundle.js',
-  },
   plugins: [
     new webpack.HotModuleReplacementPlugin(),
     new webpack.DefinePlugin({
       'process.env': {
         LIVE: JSON.stringify(process.env.LIVE),
       },
+    }),
+    new CopyPlugin([{from: path.resolve(__dirname, 'static'), to: distStatic}]),
+    new WasmPackPlugin({
+      crateDirectory: path.resolve(
+        __dirname,
+        'bpf-rust-programs',
+        'prediction-poll',
+        'wasm',
+      ),
+      extraArgs: '--no-typescript',
+      outDir: path.resolve(__dirname, 'wasm'),
+      outName: 'index',
     }),
   ],
   devServer: {
@@ -48,3 +61,34 @@ module.exports = {
     },
   },
 };
+
+const serverConfig = {
+  target: 'node',
+  entry: './src/server/bootstrap.js',
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'server.js',
+  },
+  node: {
+    __dirname: true,
+  },
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        exclude: [/node_modules/, /wasm/],
+        use: ['babel-loader', 'eslint-loader'],
+      },
+    ],
+  },
+  plugins: [
+    new FilterWarningsPlugin({
+      exclude: [
+        /Critical dependency: the request of a dependency is an expression/,
+        /Module not found: Error: Can't resolve/, // can't use web3 websocket api
+      ],
+    }),
+  ],
+};
+
+module.exports = [clientConfig, serverConfig];

@@ -122,7 +122,8 @@ class App extends React.Component {
       case POLLS_TAB: {
         return null;
       }
-      default: return null;
+      default:
+        return null;
     }
   }
 

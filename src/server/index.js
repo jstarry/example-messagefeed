@@ -1,13 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import {Connection} from '@solana/web3.js';
 
 import {url, walletUrl} from '../../urls';
 import {newSystemAccountWithAirdrop} from '../util/new-system-account-with-airdrop';
 import MessageController from './message-feed';
 import PollController from './prediction-poll';
 import * as MessageFeedProgram from '../programs/message-feed';
-import {Connection} from '@solana/web3.js';
 
 const port = process.env.PORT || 8081;
 
@@ -30,20 +30,31 @@ app.use(express.json()); // for parsing application/json
 app.get('/config.json', async (req, res) => {
   const messageMeta = await messageController.getMeta();
   const pollMeta = await pollController.getMeta();
+
   const response = {
     loading: !messageMeta || !pollMeta,
-    messageFeed: messageMeta ? {
-      firstMessage: messageMeta.firstMessage.publicKey.toString(),
-      programId: messageMeta.programId.toString(),
-    } : null,
-    predictionPoll: pollMeta ? {
-      programId: pollMeta.programId.toString(),
-      collection: pollMeta.collection.publicKey.toString(),
-    } : null,
     loginMethod,
     url,
     walletUrl,
   };
+
+  if (pollMeta) {
+    Object.assign(response, {
+      predictionPoll: {
+        programId: pollMeta.programId.toString(),
+        collection: pollMeta.collection.publicKey.toString(),
+      },
+    });
+  }
+
+  if (messageMeta) {
+    Object.assign(response, {
+      messageFeed: {
+        programId: messageMeta.programId.toString(),
+        firstMessage: messageMeta.firstMessage.publicKey.toString(),
+      },
+    });
+  }
 
   res.send(JSON.stringify(response)).end();
 });
@@ -100,11 +111,11 @@ app.post('/login', async (req, res) => {
     .end();
 });
 
-app.use(express.static(path.join(__dirname, '../dist')));
+app.use(express.static(path.join(__dirname, '../../dist/static')));
 app.listen(port);
 console.log('Cluster RPC URL:', url);
 console.log('Listening on port', port);
 
 // Load the program immediately so the first client doesn't need to wait as long
-messageController.reload().catch(err => console.log(err));
+// messageController.reload().catch(err => console.log(err));
 pollController.reload().catch(err => console.log(err));

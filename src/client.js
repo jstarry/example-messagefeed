@@ -10,7 +10,7 @@ export type Config = {
   loginMethod: string,
   url: string,
   walletUrl: string,
-}
+};
 
 export type MessageFeedConfig = {
   programId: PublicKey,
@@ -50,7 +50,10 @@ export async function getConfig(configUrl: string): Promise<Config> {
   }
 }
 
-export async function userLogin(loginUrl: string, credentials: Object): Promise<Account> {
+export async function userLogin(
+  loginUrl: string,
+  credentials: Object,
+): Promise<Account> {
   const response = await fetch(loginUrl, {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},

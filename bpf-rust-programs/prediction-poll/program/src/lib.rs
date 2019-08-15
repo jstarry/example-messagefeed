@@ -8,14 +8,13 @@ extern crate arrayref;
 extern crate solana_sdk_bpf_no_std;
 extern crate solana_sdk_bpf_utils;
 
-mod collection;
 mod program;
 mod result;
 mod simple_serde;
 mod util;
 
 use program::process_instruction;
-use solana_sdk_bpf_utils::entrypoint::*;
+use solana_sdk_bpf_utils::entrypoint::{SolClusterInfo, SolKeyedAccount};
 use solana_sdk_bpf_utils::{entrypoint, info};
 
 entrypoint!(_entrypoint);

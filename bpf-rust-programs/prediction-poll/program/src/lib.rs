@@ -3,6 +3,7 @@
 #![no_std]
 
 extern crate alloc;
+#[macro_use]
 extern crate arrayref;
 #[cfg(not(test))]
 extern crate solana_sdk_bpf_no_std;
@@ -19,11 +20,6 @@ use solana_sdk_bpf_utils::{entrypoint, info};
 
 entrypoint!(_entrypoint);
 fn _entrypoint(keyed_accounts: &mut [SolKeyedAccount], _: &SolClusterInfo, data: &[u8]) -> bool {
-    if !keyed_accounts[0].is_signer {
-        info!("key 0 did not sign the transaction");
-        return false;
-    }
-
     match process_instruction(keyed_accounts, data) {
         Err(err) => {
             err.print();

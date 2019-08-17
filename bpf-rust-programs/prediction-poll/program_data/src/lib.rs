@@ -8,8 +8,12 @@ extern crate solana_sdk_bpf_no_std;
 #[cfg(feature = "wasm")]
 extern crate wasm_bindgen;
 
+mod clock;
 mod collection;
 mod poll;
+mod tally;
 
+pub use clock::*;
 pub use collection::*;
 pub use poll::*;
+pub use tally::*;

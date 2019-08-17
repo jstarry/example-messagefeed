@@ -15,8 +15,9 @@ import Tabs from '@material-ui/core/Tabs';
 import {withStyles} from '@material-ui/core/styles';
 
 import Api from './api';
-import MessageList from './message-list';
-import Toolbar from './toolbar';
+import MessageList from './components/message-list';
+import PollGrid from './components/poll-grid';
+import Toolbar from './components/toolbar';
 
 const MESSAGES_TAB = 0;
 const POLLS_TAB = 1;
@@ -36,11 +37,14 @@ class App extends React.Component {
       banUserDialogOpen: false,
       banUserMessage: null,
       loadingMessages: true,
+      loadingPolls: true,
       busyLoggingIn: false,
       busyPosting: false,
       idle: true,
       loginMethod: 'none',
+      clock: 0,
       messages: [],
+      polls: [],
       snackMessage: '',
       transactionSignature: null,
       userAccount: null,
@@ -80,7 +84,14 @@ class App extends React.Component {
     });
 
     this.api.subscribePolls(polls => {
-      console.log({polls});
+      this.setState({
+        loadingPolls: false,
+        polls,
+      });
+    });
+
+    this.api.subscribeClock(clock => {
+      this.setState({clock});
     });
   }
 
@@ -120,7 +131,17 @@ class App extends React.Component {
         );
       }
       case POLLS_TAB: {
-        return null;
+        return (
+          <React.Fragment>
+            <button onClick={() => this.createPoll()}>Create DR3 Poll</button>
+            <PollGrid
+              clock={this.state.clock}
+              polls={this.state.polls}
+              onVote={(...args) => this.vote(...args)}
+              onClaim={(...args) => this.claim(...args)}
+            />
+          </React.Fragment>
+        );
       }
       default:
         return null;
@@ -190,11 +211,16 @@ class App extends React.Component {
       }
     }
 
-    const {loadingMessages, busyPosting, busyLoggingIn} = this.state;
+    const {
+      loadingMessages,
+      loadingPolls,
+      busyPosting,
+      busyLoggingIn,
+    } = this.state;
     return (
       <div className={classes.root}>
         <Toolbar
-          busy={loadingMessages || busyPosting || busyLoggingIn}
+          busy={loadingMessages || loadingPolls || busyPosting || busyLoggingIn}
           explorerUrl={this.blockExplorerTransactionsByProgramUrl()}
           idle={this.state.idle}
           loginDisabled={this.state.loginMethod === 'none'}
@@ -276,6 +302,77 @@ class App extends React.Component {
       newMessage,
       userToBan,
     );
+
+    this.setState({
+      busyPosting: false,
+      snackMessage,
+      transactionSignature,
+    });
+
+    return true;
+  }
+
+  async vote(pollKey, wager, tally) {
+    if (this.state.busyPosting) {
+      this.setState({
+        snackMessage: 'Unable to vote, please retry when not busy',
+        transactionSignature: null,
+      });
+      return false;
+    }
+
+    this.setState({busyPosting: true});
+    const {snackMessage, transactionSignature} = await this.api.vote(
+      pollKey,
+      wager,
+      tally,
+    );
+
+    this.setState({
+      busyPosting: false,
+      snackMessage,
+      transactionSignature,
+    });
+
+    return true;
+  }
+
+  async claim(poll, pollKey) {
+    if (this.state.busyPosting) {
+      this.setState({
+        snackMessage: 'Unable to submit claim, please retry when not busy',
+        transactionSignature: null,
+      });
+      return false;
+    }
+
+    this.setState({busyPosting: true});
+    const {snackMessage, transactionSignature} = await this.api.claim(
+      poll,
+      pollKey,
+    );
+
+    this.setState({
+      busyPosting: false,
+      snackMessage,
+      transactionSignature,
+    });
+
+    return true;
+  }
+
+  async createPoll() {
+    if (this.state.busyPosting) {
+      this.setState({
+        snackMessage: 'Unable to create poll, please retry when not busy',
+        transactionSignature: null,
+      });
+      return false;
+    }
+
+    this.setState({busyPosting: true});
+
+    const {snackMessage, transactionSignature} = await this.api.createPoll();
 
     this.setState({
       busyPosting: false,

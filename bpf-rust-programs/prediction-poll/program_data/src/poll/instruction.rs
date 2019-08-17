@@ -1,8 +1,6 @@
 use alloc::vec::Vec;
 
-#[repr(C)]
-#[derive(Debug, PartialEq)]
-pub struct PollData<'a> {
+pub struct InitPollData<'a> {
     pub timeout: u32, // block height
     pub header_len: u32,
     pub header: &'a [u8],
@@ -12,7 +10,7 @@ pub struct PollData<'a> {
     pub option_b: &'a [u8],
 }
 
-impl<'a> PollData<'a> {
+impl <'a> InitPollData<'a> {
     pub fn length(&self) -> usize {
         (4 + 4 + self.header_len + 4 + self.option_a_len + 4 + self.option_b_len) as usize
     }
@@ -45,7 +43,7 @@ impl<'a> PollData<'a> {
         let option_b_len = u32::from_be_bytes(*array_ref!(option_b_len, 0, 4));
         let (option_b, _data) = data.split_at(option_b_len as usize);
 
-        Self {
+        InitPollData {
             timeout,
             header_len,
             header,

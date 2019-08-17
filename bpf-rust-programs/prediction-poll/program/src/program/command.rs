@@ -5,6 +5,8 @@ use core::convert::TryFrom;
 pub enum Command {
     InitCollection,
     InitPoll,
+    SubmitVote,
+    SubmitClaim,
 }
 
 impl TryFrom<u8> for Command {
@@ -14,6 +16,8 @@ impl TryFrom<u8> for Command {
         match value {
             0 => Ok(Command::InitCollection),
             1 => Ok(Command::InitPoll),
+            2 => Ok(Command::SubmitVote),
+            3 => Ok(Command::SubmitClaim),
             _ => Err(ProgramError::InvalidCommand),
         }
     }

@@ -12,6 +12,7 @@ import {
 } from '@solana/web3.js';
 
 import {newSystemAccountWithAirdrop} from '../util/new-system-account-with-airdrop';
+import {sleep} from '../util/sleep';
 import {url} from '../../urls';
 import * as ProgramCommand from '../programs/prediction-poll/command';
 
@@ -34,7 +35,10 @@ export default class PollController {
     if (this.meta) {
       const {programId} = this.meta;
       try {
-        await this.connection.getAccountInfo(programId);
+        await Promise.race([
+          sleep(2000),
+          this.connection.getAccountInfo(programId),
+        ]);
         return this.meta;
       } catch (err) {
         console.error(

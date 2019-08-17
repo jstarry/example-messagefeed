@@ -79,8 +79,6 @@ export default class MessageFeedApi {
   // TODO: Rewrite this function to use the solana-web3.js websocket pubsub
   //       instead of polling
   async pollMessages(callback) {
-    console.log('pollMessages');
-
     const onUpdate = () => {
       console.log('updateMessage');
       if (this.messageCallback) {

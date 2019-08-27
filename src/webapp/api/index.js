@@ -2,7 +2,9 @@ import {Account, Connection} from '@solana/web3.js';
 import localforage from 'localforage';
 
 import {getConfig, userLogin} from '../../client';
+import ClockApi from './clock';
 import MessageFeedApi from './message-feed';
+import PredictionPollApi from './prediction-poll';
 
 export default class Api {
   constructor() {
@@ -15,7 +17,9 @@ export default class Api {
         baseUrl = `http://${hostname}:${process.env.PORT || 8081}`;
     }
 
+    this.clock = new ClockApi();
     this.messageFeed = new MessageFeedApi();
+    this.predictionPoll = new PredictionPollApi();
     this.configUrl = baseUrl + '/config.json';
     this.loginUrl = baseUrl + '/login';
   }
@@ -34,17 +38,25 @@ export default class Api {
     this.messageFeed.subscribe(onMessages);
   }
 
+  subscribePolls(onPolls) {
+    this.predictionPoll.subscribe(onPolls);
+  }
+
+  subscribeClock(onClock) {
+    this.clock.subscribe(onClock);
+  }
+
   unsubscribe() {
     this.balanceCallback = null;
     this.configCallback = null;
+    this.clock.unsubscribe();
     this.messageFeed.unsubscribe();
+    this.predictionPoll.unsubscribe();
   }
 
   explorerUrl() {
     let explorerUrl = 'http://localhost:3000';
-    const matches = this.connectionUrl.match(
-      'https://api.(.*)testnet.solana.com',
-    );
+    const matches = this.connectionUrl.match('https://(.*)testnet.solana.com');
     if (matches) {
       const testnet = matches[1];
       explorerUrl = `http://${testnet}testnet.solana.com`;
@@ -56,15 +68,19 @@ export default class Api {
   // or new message feed server deployment
   async pollConfig(callback) {
     if (callback !== this.configCallback) return;
-    console.log('pollConfig');
     try {
-      const {loginMethod, messageFeed, url, walletUrl} = await getConfig(
-        this.configUrl,
-      );
+      const {
+        loginMethod,
+        messageFeed,
+        predictionPoll,
+        urlTls,
+        walletUrl,
+      } = await getConfig(this.configUrl);
 
-      this.connection = new Connection(url);
-      this.connectionUrl = url;
+      this.connection = new Connection(urlTls);
+      this.connectionUrl = urlTls;
       this.walletUrl = walletUrl;
+      this.clock.updateConfig(this.connection);
 
       const explorerUrl = this.explorerUrl(this.connectionUrl);
       const response = {explorerUrl, loginMethod, walletUrl};
@@ -78,6 +94,11 @@ export default class Api {
         console.error('failed to update message feed config', err);
       }
 
+      Object.assign(
+        response,
+        this.predictionPoll.updateConfig(this.connection, predictionPoll),
+      );
+
       if (this.configCallback) {
         this.configCallback(response);
       }
@@ -89,7 +110,6 @@ export default class Api {
 
   async pollBalance(callback) {
     if (callback !== this.balanceCallback) return;
-    console.log('pollBalance');
     if (this.connection) {
       const payerAccount = await this.getPayerAccount();
       try {
@@ -97,7 +117,7 @@ export default class Api {
           payerAccount.publicKey,
         );
         if (this.balanceCallback) {
-          this.balanceCallback(payerBalance);
+          this.balanceCallback(payerBalance, payerAccount.publicKey);
         }
       } catch (err) {
         console.error('Failed to refresh balance', err);
@@ -112,7 +132,7 @@ export default class Api {
     const payerAccount = await this.getPayerAccount();
     const windowName = 'wallet';
     const windowOptions =
-      'toolbar=no, location=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=500, height=600';
+      'toolbar=no, location=no, status=no, menubar=no, scrollbars=yes, resizable=yes, width=500, height=1200';
     if (!this.walletWindow) {
       window.addEventListener('message', e => this.onWalletMessage(e));
       this.walletWindow = window.open(
@@ -134,7 +154,7 @@ export default class Api {
             method: 'addFunds',
             params: {
               pubkey: payerAccount.publicKey.toString(),
-              amount: 150,
+              amount: 750,
               network: this.connectionUrl,
             },
           },
@@ -156,7 +176,7 @@ export default class Api {
               method: 'addFunds',
               params: {
                 pubkey: payerAccount.publicKey.toString(),
-                amount: 150,
+                amount: 750,
                 network: this.connectionUrl,
               },
             },
@@ -191,6 +211,29 @@ export default class Api {
       newMessage,
       userToBan,
     );
+  }
+
+  async createPoll(header, optionA, optionB, timeout) {
+    const payerAccount = await this.getPayerAccount();
+    const creatorAccount = this.messageFeed.getUserAccount();
+    return await this.predictionPoll.createPoll(
+      payerAccount,
+      creatorAccount,
+      header,
+      optionA,
+      optionB,
+      timeout,
+    );
+  }
+
+  async vote(pollKey, wager, tally) {
+    const payerAccount = await this.getPayerAccount();
+    return await this.predictionPoll.vote(payerAccount, pollKey, wager, tally);
+  }
+
+  async claim(poll, pollKey) {
+    const payerAccount = await this.getPayerAccount();
+    return await this.predictionPoll.claim(payerAccount, poll, pollKey);
   }
 
   async isUserBanned(userKey) {

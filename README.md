@@ -6,17 +6,17 @@
 # Message Feed on Solana
 
 This project demonstrates how to use the [Solana Javascript API](https://github.com/solana-labs/solana-web3.js)
-to build, deploy, and interact with programs on the Solana blockchain, implementing a simple feed of messages
+to build, deploy, and interact with programs on the Solana blockchain, implementing a simple feed of messages and polls.
 To see it running go to https://solana-example-messagefeed.herokuapp.com/
 
-## How it works at a high-level
+## Overview
+
+### Message Feed
 Messages are represented as a singly-linked list of Solana accounts.
 
 Each Message account contains the message text, public key of the next message, and the public key of the User Account who posted it.
 
-To post a new message, a User Account is required.  The only way to obtain a
-User Account is to present credentials to the Https Server that created the first
-message in the chain.
+To post a new message, a User Account is required.  The only way to obtain a User Account is to present credentials to the Https Server that created the first message in the chain.
 
 A User Account contains a bit which indicates if they have been banned by another user.
 
@@ -124,12 +124,12 @@ After building the program and starting the web server, you can view the current
 message feed by running
 
 ```sh
-$ npm run start
+$ npm run message-cli
 ```
 
 and post a new message with:
 ```sh
-$ npm run start -- "This is a message"
+$ npm run message-cli -- "This is a message"
 ```
 
 ### Run the WebApp Front End
